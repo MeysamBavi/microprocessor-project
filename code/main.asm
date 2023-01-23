@@ -6,7 +6,7 @@
         BALL_CENTER_Y DW 00064h    
         BALL_RADIUS DW 07h
         BALL_SPEED_X DW 02h
-        BALL_SPEED_Y DW 02h
+        BALL_SPEED_Y DW -02h
         ;BALL DRAWING VARIABLES
         D_X DW ?
         D_Y DW 0
@@ -144,7 +144,7 @@ CHECKBORDER PROC NEAR
     CMP BX, BORDER_MIN_Y
     JLE Y_BORDER_IF
     CMP BX, BORDER_MAX_Y
-    JGE Y_BORDER_IF
+    JGE Y_BORDER_IF_LOSE
     JMP ENDLABEL
 
     Y_BORDER_IF:
@@ -152,12 +152,18 @@ CHECKBORDER PROC NEAR
         SUB BX, BALL_SPEED_Y
         MOV BALL_SPEED_Y,BX
         JMP ENDLABEL
+    
+    Y_BORDER_IF_LOSE:    
+        MOV AX, 0
+        JMP ENDLABEL
 
     X_BORDER_IF:
         MOV BX,0
         SUB BX, BALL_SPEED_X
         MOV BALL_SPEED_X, BX
-        
+        JMP ENDLABEL
+
+
     ENDLABEL:
     
     RET
@@ -225,7 +231,7 @@ MAIN    PROC FAR
             MOV BALL_CENTER_Y, BX
             
             CALL CHECKBORDER
-            CMP BX,00h
+            CMP AX,00h
             JE DONE
             
             JMP GAME_LOOP
