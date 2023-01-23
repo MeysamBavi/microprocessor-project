@@ -3,6 +3,7 @@
 "controller\main.o"
 "controller\stm32f4xx_it.o"
 "controller\stm32f4xx_hal_msp.o"
+"controller\lcd.o"
 "controller\stm32f4xx_hal_tim.o"
 "controller\stm32f4xx_hal_tim_ex.o"
 "controller\stm32f4xx_hal_uart.o"

@@ -17,10 +17,11 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
+#include "lcd.h"
 
 /* USER CODE END Includes */
 
@@ -88,6 +89,10 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+	
+	initLCD();
+	
+	LCD_String("Hello!");
 
   /* USER CODE END 2 */
 
