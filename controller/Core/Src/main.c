@@ -17,6 +17,7 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -27,6 +28,10 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+
+#define DIRECTION_RIGHT ((uint8_t) 0x01UL)
+#define DIRECTION_LEFT ((uint8_t) 0x02UL)
+#define DIRECTION_STOP ((uint8_t) 0x00UL)
 
 /* USER CODE END PTD */
 
@@ -44,6 +49,11 @@
 
 /* USER CODE BEGIN PV */
 
+static uint8_t Direction = DIRECTION_STOP;
+static uint8_t RightIsPushed = 0;
+static uint8_t LeftIsPushed = 0;
+static uint8_t DirectionUpdated = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -51,6 +61,9 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
+
+void UpdateDirection();
+void SendDirection();
 
 /* USER CODE END PFP */
 
@@ -66,7 +79,7 @@ static void MX_USART2_UART_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+	uint8_t LastDirection = Direction;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -100,6 +113,16 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+		__WFI();
+		if (DirectionUpdated)
+		{
+			DirectionUpdated = 0;
+			if (LastDirection != Direction)
+			{
+				SendDirection();
+				LastDirection = Direction;
+			}
+		}
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -223,8 +246,8 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : RIGHT_BUTTON_Pin LEFT_BUTTON_Pin */
   GPIO_InitStruct.Pin = RIGHT_BUTTON_Pin|LEFT_BUTTON_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB10 PB4 PB5 PB6
@@ -236,9 +259,55 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+
 }
 
 /* USER CODE BEGIN 4 */
+
+void UpdateDirection()
+{
+	
+	if ((RightIsPushed) && (LeftIsPushed))
+	{
+		Direction = DIRECTION_STOP;
+	} else if (RightIsPushed) {
+		Direction = DIRECTION_RIGHT;
+	} else if (LeftIsPushed) {
+		Direction = DIRECTION_LEFT;
+	} else {
+		Direction = DIRECTION_STOP;
+	}
+	
+	DirectionUpdated = 1;
+}
+
+void SendDirection()
+{
+	LCD_Command(LCD_Clear);
+	LCD_Char('0' + RightIsPushed);
+	LCD_Char('0' + LeftIsPushed);
+	LCD_Char('0' + Direction);
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if (GPIO_Pin == RIGHT_BUTTON_Pin)
+	{
+		RightIsPushed = HAL_GPIO_ReadPin(RIGHT_BUTTON_GPIO_Port, RIGHT_BUTTON_Pin);
+		UpdateDirection();
+		
+	} else if (GPIO_Pin == LEFT_BUTTON_Pin)
+	{
+		LeftIsPushed = HAL_GPIO_ReadPin(LEFT_BUTTON_GPIO_Port, LEFT_BUTTON_Pin);
+		UpdateDirection();
+	}
+}
 
 /* USER CODE END 4 */
 

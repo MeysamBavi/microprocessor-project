@@ -67,8 +67,10 @@ void Error_Handler(void);
 #define LD2_GPIO_Port GPIOA
 #define RIGHT_BUTTON_Pin GPIO_PIN_0
 #define RIGHT_BUTTON_GPIO_Port GPIOB
+#define RIGHT_BUTTON_EXTI_IRQn EXTI0_IRQn
 #define LEFT_BUTTON_Pin GPIO_PIN_1
 #define LEFT_BUTTON_GPIO_Port GPIOB
+#define LEFT_BUTTON_EXTI_IRQn EXTI1_IRQn
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14

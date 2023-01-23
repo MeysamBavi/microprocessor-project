@@ -1,9 +1,9 @@
 --cpu=Cortex-M4.fp.sp
 "controller\startup_stm32f401xe.o"
+"controller\lcd.o"
 "controller\main.o"
 "controller\stm32f4xx_it.o"
 "controller\stm32f4xx_hal_msp.o"
-"controller\lcd.o"
 "controller\stm32f4xx_hal_tim.o"
 "controller\stm32f4xx_hal_tim_ex.o"
 "controller\stm32f4xx_hal_uart.o"
