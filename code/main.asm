@@ -1,9 +1,12 @@
     .MODEL SMALL
     .STACK 64
     .DATA
-        BALL_CENTER_X DW 0006Fh
-        BALL_CENTER_Y DW 0006Fh    
-        BALL_RADIUS DW 28h
+        SCREEN_DELAY DB 00001h
+        BALL_CENTER_X DW 0000Fh
+        BALL_CENTER_Y DW 00010h    
+        BALL_RADIUS DW 07h
+        BALL_SPEED_X DW 02h
+        BALL_SPEED_Y DW 00h
         ; BALL DRAWING VARIABLES
         D_X DW ?
         D_Y DW 0
@@ -82,6 +85,9 @@ DRAW_POINTS PROC NEAR
 DRAW_BALL PROC NEAR
     MOV DX, BALL_RADIUS
     MOV D_X, DX
+
+    MOV DX, D_Y
+    MOV D_Y,0
     ;THIS LOOP FOLLOWS THE MIDPOINT CIRLCE DRAWING ALGHORITHM
     CIRCLE_LOOP:
         MOV BX, D_X
@@ -120,6 +126,22 @@ DRAW_BALL PROC NEAR
         END_LOOP :
     RET
     DRAW_BALL ENDP
+
+DELAY PROC NEAR
+    
+    MOV AH,2Ch
+    INT 21h
+    MOV BL, DL
+    WAITLOOP:
+        MOV AH,2Ch
+        INT 21h
+        MOV CL, DL
+        SUB CL, BL
+        CMP CL,AL
+        JB WAITLOOP
+    RET
+    DELAY ENDP
+
 MAIN    PROC FAR
         
         MOV AX,@DATA
@@ -133,10 +155,33 @@ MAIN    PROC FAR
         MOV BX, 0000h 
         INT 10h
         ;GRAPHIC INIT END
-        
-        MOV AL,09h 
-        CALL DRAW_BALL
+       
+        GAME_LOOP:
 
+            MOV AL,0Fh 
+            CALL DRAW_BALL
+            
+            MOV AL,SCREEN_DELAY
+            CALL DELAY
+            
+            MOV AL,00h
+            CALL DRAW_BALL
+
+            MOV BX, BALL_CENTER_X
+            ADD BX, BALL_SPEED_x
+            MOV BALL_CENTER_X, BX
+
+            MOV BX, BALL_CENTER_Y
+            ADD BX, BALL_SPEED_Y
+            MOV BALL_CENTER_Y, BX
+            
+            MOV BX,BALL_CENTER_X
+            CMP BX,00FFh
+            JAE DONE
+            
+            JMP GAME_LOOP
+        
+        DONE:
         MOV AH, 00h        
         INT 16h
         
