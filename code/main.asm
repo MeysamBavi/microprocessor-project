@@ -1,9 +1,9 @@
     .MODEL SMALL
     .STACK 64
     .DATA
-        SCREEN_DELAY DB 00001h
-        BALL_CENTER_X DW 000A0h
-        BALL_CENTER_Y DW 00064h    
+        SCREEN_DELAY DB 0001h
+        BALL_CENTER_X DW 00A0h
+        BALL_CENTER_Y DW 0064h    
         BALL_RADIUS DW 07h
         BALL_SPEED_X DW 02h
         BALL_SPEED_Y DW -02h
@@ -16,6 +16,13 @@
         BORDER_MIN_Y DW ?
         BORDER_MAX_X DW ?
         BORDER_MAX_Y DW ?
+        ;PAD VALUES
+        PAD_MOVE_SPEED DW 00h
+        PAD_CORNER_X DW 00A0h
+        PAD_CORNER_Y DW 00BEh
+        PAD_WIDTH DW 50
+        PAD_HEIGHT DW 10
+        PAD_COLOR DB ?
     .CODE
 
 ;BEFORE CALLING THIS PROC MOVE COLOR TO AL
@@ -132,8 +139,43 @@ DRAW_BALL PROC NEAR
         END_LOOP :
     RET
     DRAW_BALL ENDP
+
+DRAW_PAD PROC
+    MOV DX, PAD_CORNER_Y
+    MOV CX, PAD_CORNER_X
+    
+    MOV BX, DX
+    ADD BX, PAD_HEIGHT
+    MOV AX, CX
+    ADD AX, PAD_WIDTH
+    
+    PAD_DRAW_LOOP1:
+        CMP DX,BX
+        JE DRAW_LOOP1END
+        MOV CX, PAD_CORNER_X
+        PAD_DRAW_LOOP2:
+            CMP CX, AX
+            JE DRAW_LOOP2END
+            PUSH AX
+            PUSH BX
+            MOV AL, PAD_COLOR
+            CALL DRAW_PIXEL_INIT
+            POP BX
+            POP AX
+            INC CX
+            JMP PAD_DRAW_LOOP2
+        DRAW_LOOP2END:
+        INC DX
+        JMP PAD_DRAW_LOOP1
+    DRAW_LOOP1END:
+    
+    
+    RET
+
+    DRAW_PAD ENDP
 ;FOR CHECKING COLLISION AND DEFLECTING THE BALL
 CHECKBORDER PROC NEAR
+    
     MOV BX, BALL_CENTER_X
     CMP BX, BORDER_MIN_X   
     JLE X_BORDER_IF
@@ -145,6 +187,11 @@ CHECKBORDER PROC NEAR
     JLE Y_BORDER_IF
     CMP BX, BORDER_MAX_Y
     JGE Y_BORDER_IF_LOSE
+    
+    MOV CX, PAD_CORNER_Y
+    SUB CX, BALL_RADIUS
+    CMP BX, CX
+    JGE PAD_IF
     JMP ENDLABEL
 
     Y_BORDER_IF:
@@ -163,6 +210,15 @@ CHECKBORDER PROC NEAR
         MOV BALL_SPEED_X, BX
         JMP ENDLABEL
 
+
+    PAD_IF:
+        MOV BX, PAD_CORNER_X
+        CMP BX, BALL_CENTER_X
+        JG ENDLABEL
+        ADD BX, PAD_WIDTH
+        CMP BX, BALL_CENTER_X
+        JL ENDLABEL
+        JMP Y_BORDER_IF
 
     ENDLABEL:
     
@@ -215,12 +271,22 @@ MAIN    PROC FAR
 
             MOV AL,0Fh 
             CALL DRAW_BALL
-            
+
+            MOV PAD_COLOR, 0Ch
+            CALL DRAW_PAD
+
             MOV AL,SCREEN_DELAY
             CALL DELAY
             
             MOV AL,00h
             CALL DRAW_BALL
+
+            MOV PAD_COLOR, 00h
+            CALL DRAW_PAD
+
+            MOV BX, PAD_CORNER_X
+            ADD BX, PAD_MOVE_SPEED
+            MOV PAD_CORNER_X, BX
 
             MOV BX, BALL_CENTER_X
             ADD BX, BALL_SPEED_X
@@ -231,6 +297,7 @@ MAIN    PROC FAR
             MOV BALL_CENTER_Y, BX
             
             CALL CHECKBORDER
+            
             CMP AX,00h
             JE DONE
             
