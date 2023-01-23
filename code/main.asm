@@ -10,9 +10,9 @@
         ERR DW 0
     .CODE
 
+;BEFORE CALLING THIS PROC MOVE COLOR TO AL
 DRAW_PIXEL_INIT PROC NEAR
     MOV AH, 0Ch
-    MOV AL, 0Fh
     MOV BH, 00h
     INT 10h
     RET
@@ -98,11 +98,11 @@ DRAW_BALL PROC NEAR
         ADD BX, D_Y
         MOV ERR, BX
 
-        MOV AX, ERR
-        SUB AX, D_X
-        ADD AX, AX
-        INC AX
-        CMP AX, 0
+        MOV BX, ERR
+        SUB BX, D_X
+        ADD BX, BX
+        INC BX
+        CMP BX, 0
         JG CHECK
         JMP CIRCLE_LOOP
 
@@ -133,7 +133,8 @@ MAIN    PROC FAR
         MOV BX, 0000h 
         INT 10h
         ;GRAPHIC INIT END
-
+        
+        MOV AL,09h 
         CALL DRAW_BALL
 
         MOV AH, 00h        
