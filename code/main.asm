@@ -1,12 +1,12 @@
     .MODEL SMALL
     .STACK 64
     .DATA
-        SCREEN_DELAY DB 0001h
+        SCREEN_DELAY DB 0004h
         BALL_CENTER_X DW 00A0h
         BALL_CENTER_Y DW 0064h    
         BALL_RADIUS DW 07h
-        BALL_SPEED_X DW 02h
-        BALL_SPEED_Y DW -02h
+        BALL_SPEED_X DW 00h
+        BALL_SPEED_Y DW -03h
         ;BALL DRAWING VARIABLES
         D_X DW ?
         D_Y DW 0
@@ -25,7 +25,7 @@
         PAD_HEIGHT DW 10
         PAD_COLOR DB ?
         ;SCORE VALUE
-        SCORE DW 0
+        SCORE DB 0
         ;STRNGS
         SCORE_TEXT_STRING DB 'S','C','O','R','E','$'
         SCORE_NUM_STRING DB '0','0','$'
@@ -301,6 +301,19 @@ SHOW_SCORE PROC NEAR
 
     RET
     SHOW_SCORE ENDP
+
+UPDATE_SCORE PROC NEAR
+    MOV AX, 0
+    MOV AL, SCORE
+    MOV BL,10
+    DIV BL
+    ADD AH, 30h
+    ADD AL, 30h
+    MOV [SCORE_NUM_STRING],AL
+    MOV [SCORE_NUM_STRING +1],AH
+    RET
+    UPDATE_SCORE ENDP
+
 DELAY PROC NEAR
     
     MOV AH,2Ch
@@ -348,6 +361,7 @@ MAIN    PROC FAR
         ;BORDER INIT END
         ;MAIN GAME LOOP
         GAME_LOOP:
+            CALL UPDATE_SCORE
             CALL DRAW_BORDER
             ;DRAW THE BALL IN WHITE (AL INDICATES COLOR)
             MOV AL,0Fh 
@@ -390,8 +404,8 @@ MAIN    PROC FAR
             CMP AX, 00h
             JE DONE
             ;IF THE SCORE IS 30 WE HAVE WON
-            MOV AX, SCORE
-            CMP AX, 30
+            MOV AH, SCORE
+            CMP AH, 30
             JE DONE
             
             JMP GAME_LOOP
