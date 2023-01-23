@@ -2,15 +2,20 @@
     .STACK 64
     .DATA
         SCREEN_DELAY DB 00001h
-        BALL_CENTER_X DW 0000Fh
-        BALL_CENTER_Y DW 00010h    
+        BALL_CENTER_X DW 000A0h
+        BALL_CENTER_Y DW 00064h    
         BALL_RADIUS DW 07h
         BALL_SPEED_X DW 02h
-        BALL_SPEED_Y DW 00h
-        ; BALL DRAWING VARIABLES
+        BALL_SPEED_Y DW 02h
+        ;BALL DRAWING VARIABLES
         D_X DW ?
         D_Y DW 0
         ERR DW 0
+        ;BORDER VALUES
+        BORDER_MIN_X DW ?
+        BORDER_MIN_Y DW ?
+        BORDER_MAX_X DW ?
+        BORDER_MAX_Y DW ?
     .CODE
 
 ;BEFORE CALLING THIS PROC MOVE COLOR TO AL
@@ -127,6 +132,36 @@ DRAW_BALL PROC NEAR
         END_LOOP :
     RET
     DRAW_BALL ENDP
+;FOR CHECKING COLLISION AND DEFLECTING THE BALL
+CHECKBORDER PROC NEAR
+    MOV BX, BALL_CENTER_X
+    CMP BX, BORDER_MIN_X   
+    JLE X_BORDER_IF
+    CMP BX, BORDER_MAX_X
+    JGE X_BORDER_IF
+
+    MOV BX, BALL_CENTER_Y
+    CMP BX, BORDER_MIN_Y
+    JLE Y_BORDER_IF
+    CMP BX, BORDER_MAX_Y
+    JGE Y_BORDER_IF
+    JMP ENDLABEL
+
+    Y_BORDER_IF:
+        MOV BX, 0
+        SUB BX, BALL_SPEED_Y
+        MOV BALL_SPEED_Y,BX
+        JMP ENDLABEL
+
+    X_BORDER_IF:
+        MOV BX,0
+        SUB BX, BALL_SPEED_X
+        MOV BALL_SPEED_X, BX
+        
+    ENDLABEL:
+    
+    RET
+    CHECKBORDER ENDP
 
 DELAY PROC NEAR
     
@@ -157,6 +192,19 @@ MAIN    PROC FAR
         INT 10h
         ;GRAPHIC INIT END
        
+        ;BORDER INIT
+        MOV BX,0
+        ADD BX,BALL_RADIUS
+        MOV BORDER_MIN_X, BX
+        MOV BORDER_MIN_Y, BX
+        MOV BX, 140h
+        SUB BX, BALL_RADIUS
+        MOV BORDER_MAX_X, BX
+        MOV BX, 0C8h
+        SUB BX, BALL_RADIUS
+        MOV BORDER_MAX_Y, BX
+        ;BORDER INIT END
+        ;MAIN GAME LOOP
         GAME_LOOP:
 
             MOV AL,0Fh 
@@ -169,20 +217,21 @@ MAIN    PROC FAR
             CALL DRAW_BALL
 
             MOV BX, BALL_CENTER_X
-            ADD BX, BALL_SPEED_x
+            ADD BX, BALL_SPEED_X
             MOV BALL_CENTER_X, BX
 
             MOV BX, BALL_CENTER_Y
             ADD BX, BALL_SPEED_Y
             MOV BALL_CENTER_Y, BX
             
-            MOV BX,BALL_CENTER_X
-            CMP BX,00FFh
-            JAE DONE
+            CALL CHECKBORDER
+            CMP BX,00h
+            JE DONE
             
             JMP GAME_LOOP
         
         DONE:
+        ;END MAIN GAME LOOP
         MOV AH, 00h        
         INT 16h
         
