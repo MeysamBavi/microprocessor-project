@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 
 #include "lcd.h"
+#include <stdio.h>
 
 /* USER CODE END Includes */
 
@@ -32,6 +33,10 @@
 #define DIRECTION_RIGHT ((uint8_t) 0x01UL)
 #define DIRECTION_LEFT ((uint8_t) 0x02UL)
 #define DIRECTION_STOP ((uint8_t) 0x00UL)
+
+#define STATUS_WIN ((uint8_t) 'W')
+#define STATUS_LOSE ((uint8_t) 'L')
+#define STATUS_ONGOING ((uint8_t) 'O')
 
 /* USER CODE END PTD */
 
@@ -45,7 +50,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
- UART_HandleTypeDef huart2;
+ UART_HandleTypeDef huart1;
+UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
@@ -53,6 +59,10 @@ static uint8_t Direction = DIRECTION_STOP;
 static uint8_t RightIsPushed = 0;
 static uint8_t LeftIsPushed = 0;
 static uint8_t DirectionUpdated = 0;
+static uint8_t ReceiveBuffer[1] = {0};
+static uint8_t GameScore = 0;
+static uint8_t GameStatus = STATUS_ONGOING;
+static uint8_t GameDataUpdated = 0;
 
 /* USER CODE END PV */
 
@@ -60,10 +70,14 @@ static uint8_t DirectionUpdated = 0;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 void UpdateDirection();
 void SendDirection();
+uint8_t EncodeDirection(uint8_t);
+void DecodeReceivedData(uint8_t);
+void DisplayGameData();
 
 /* USER CODE END PFP */
 
@@ -101,9 +115,11 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 	
 	initLCD();
+	HAL_UART_Receive_IT(&huart1, ReceiveBuffer, 1);
 	
 	LCD_String("Hello!");
 
@@ -114,6 +130,7 @@ int main(void)
   while (1)
   {
 		__WFI();
+		
 		if (DirectionUpdated)
 		{
 			DirectionUpdated = 0;
@@ -122,6 +139,13 @@ int main(void)
 				SendDirection();
 				LastDirection = Direction;
 			}
+		}
+		
+		if (GameDataUpdated)
+		{
+			GameDataUpdated = 0;
+			DisplayGameData();
+			HAL_UART_Receive_IT(&huart1, ReceiveBuffer, 1);
 		}
     /* USER CODE END WHILE */
 
@@ -174,6 +198,39 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 2400;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
 }
 
 /**
@@ -289,10 +346,40 @@ void UpdateDirection()
 
 void SendDirection()
 {
-	LCD_Command(LCD_Clear);
-	LCD_Char('0' + RightIsPushed);
-	LCD_Char('0' + LeftIsPushed);
-	LCD_Char('0' + Direction);
+	uint8_t data = EncodeDirection(Direction);
+	HAL_UART_Transmit(&huart1, &data, 1, 500);
+}
+
+uint8_t EncodeDirection(uint8_t data)
+{
+	switch (data)
+	{
+		case DIRECTION_RIGHT:
+			return 'R';
+		case DIRECTION_LEFT:
+			return 'L';
+		case DIRECTION_STOP:
+			return 'S';
+	}
+	
+	return '-';
+}
+
+void DecodeReceivedData(uint8_t data)
+{
+	switch (data)
+	{
+		case STATUS_WIN:
+		case STATUS_LOSE:
+		case STATUS_ONGOING:
+			GameStatus = data;
+			GameScore = 0;
+			break;
+		default:
+			GameScore = data;
+			GameStatus = STATUS_ONGOING;
+			break;
+	}
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
@@ -307,6 +394,37 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		LeftIsPushed = HAL_GPIO_ReadPin(LEFT_BUTTON_GPIO_Port, LEFT_BUTTON_Pin);
 		UpdateDirection();
 	}
+}
+
+void HAL_UART_RxCpltCallback (UART_HandleTypeDef * huart)
+{
+	if (huart->Instance == USART1)
+	{
+		DecodeReceivedData(ReceiveBuffer[0]);
+		GameDataUpdated = 1;
+	}
+}
+
+void DisplayGameData()
+{
+	static char str[21];
+	
+	LCD_Command(LCD_Clear);
+	
+	if (GameStatus == STATUS_WIN)
+	{
+		LCD_String("YOU WON!");
+		return;
+	}
+	
+	if (GameStatus == STATUS_LOSE)
+	{
+		LCD_String("YOU LOST :(");
+		return;
+	}
+	
+	sprintf(str, "%d", GameScore);
+	LCD_String(str);
 }
 
 /* USER CODE END 4 */
