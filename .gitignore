@@ -50,3 +50,9 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Keil
+controller.uvguix.*
+
+# Ignore Build Files
+./controller/MDK-ARM/controller/*
