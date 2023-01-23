@@ -55,4 +55,4 @@ dkms.conf
 controller.uvguix.*
 
 # Ignore Build Files
-./controller/MDK-ARM/controller/*
+controller/MDK-ARM/controller/
