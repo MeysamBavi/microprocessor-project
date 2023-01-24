@@ -5,7 +5,7 @@
         BALL_CENTER_X DW 00A0h
         BALL_CENTER_Y DW 0064h    
         BALL_RADIUS DW 07h
-        BALL_SPEED_X DW 00h
+        BALL_SPEED_X DW 02h
         BALL_SPEED_Y DW -03h
         ;BALL DRAWING VARIABLES
         D_X DW ?
@@ -357,6 +357,48 @@ UPDATE_PAD_SPEED PROC FAR
 
     UPDATE_PAD_SPEED ENDP
 
+UPDATE_PAD_SPEED_KEYBOARD PROC NEAR
+    CHECK_BUFF:
+        MOV AH, 01h
+        INT 16h
+        JZ SKIP_KEY
+
+        MOV AH, 00h
+        INT 16h
+        JMP CHECK_BUFF
+
+    SKIP_KEY:
+        CMP AL, 44h
+        JE RIGHT_PRESSED
+        CMP AL, 64h
+        JE RIGHT_PRESSED
+
+        CMP AL, 41h
+        JE LEFT_PRESSED
+        CMP AL, 61h
+        JE LEFT_PRESSED
+
+        CMP AL, 53h
+        JE STOP_PRESSED
+        CMP AL, 73h
+        JE STOP_PRESSED
+
+        RET
+
+        RIGHT_PRESSED:
+        MOV PAD_MOVE_SPEED, PAD_MOVE_SPEED_AMP
+        RET
+
+        LEFT_PRESSED:
+        MOV PAD_MOVE_SPEED, -PAD_MOVE_SPEED_AMP
+        RET
+
+        STOP_PRESSED:
+        MOV PAD_MOVE_SPEED, 0
+        RET
+
+UPDATE_PAD_SPEED_KEYBOARD ENDP
+
 DELAY PROC NEAR
     
     MOV AH,2Ch
@@ -424,7 +466,7 @@ MAIN    PROC FAR
             CALL DELAY
 
             ; READ FROM CONTROLLER TO UPDATE PAD_SPEED
-            CALL UPDATE_PAD_SPEED
+            CALL UPDATE_PAD_SPEED_KEYBOARD
 
             ;REDRAW THE BALL IN BLACK    
             MOV AL,00h
